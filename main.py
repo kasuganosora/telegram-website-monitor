@@ -58,12 +58,12 @@ async def add(bot: Update, context: ContextTypes.DEFAULT_TYPE):
             if result['fetch'] is False:
                 await bot.message.reply_text("Can't fetch %s" % url)
                 return
+            website = Website(chat_id=bot.effective_message.chat_id, url=url, method='check_content', param=param, last=result['match_hash'])
+            website.save(force_insert=True)
         except Exception as e:
             await bot.message.reply_text('error %s' % e)
             return
         
-        website = Website(chat_id=bot.effective_message.chat_id, url=url, method='check_content', param=param)
-        website.save(force_insert=True)
         await bot.message.reply_text("Added %s" % url)
     else:
         await bot.message.reply_text("Website %s already exists" % url)
