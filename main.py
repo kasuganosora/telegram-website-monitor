@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from telegram.ext import Application, CommandHandler,ContextTypes
-from settings import TELEGRAM_API_KEY, BOTAN_TOKEN
+from settings import TELEGRAM_API_KEY
 from data import Website
 import requests
 from decorators import required_argument, valid_url
