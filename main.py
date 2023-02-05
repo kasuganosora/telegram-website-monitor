@@ -52,12 +52,19 @@ async def add(bot: Update, context: ContextTypes.DEFAULT_TYPE):
     website_count = (Website.select().where((Website.chat_id == bot.effective_message.chat_id) & (Website.url == url)).count())
     print(website_count)
     if website_count == 0:
+        # check can fetch
+        try:
+            result = checker.content_checker(url, param)
+            if result['fetch'] is False:
+                await bot.message.reply_text("Can't fetch %s" % url)
+                return
+        except:
+            await bot.message.reply_text('param error')
+            return
+        
         website = Website(chat_id=bot.effective_message.chat_id, url=url, method='check_content', param=param)
-        print('ok1')
         website.save(force_insert=True)
-        print('ok2')
         await bot.message.reply_text("Added %s" % url)
-        print('ok3')
     else:
         await bot.message.reply_text("Website %s already exists" % url)
     print('end')
@@ -96,19 +103,18 @@ async def test(bot: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         result = checker.check_content(url, param)
+        if result['fetch'] is False:
+            await bot.message.reply_text("fetch %s is error" % url)
+            return
+        
+        if len(param) == 0:
+            await bot.message.reply_text("fetch %s is ok, status code %d" % url, result['status_code'])
+        else:
+            await bot.message.reply_text("fetch %s is ok, status code %d, match %s" % url, result['status_code'], result['match_content'])
     except:
         if len(param) == 0:
             await bot.message.reply_text("param is error")
             return
-    
-    if result['fetch'] is False:
-        await bot.message.reply_text("fetch %s is error" % url)
-        return
-    
-    if len(param) == 0:
-        await bot.message.reply_text("fetch %s is ok, status code %d" % url, result['status_code'])
-    else:
-        await bot.message.reply_text("fetch %s is ok, status code %d, match %s" % url, result['status_code'], result['match_content'])
 
 app = Application.builder().token(TELEGRAM_API_KEY).build()
 app.add_handler(CommandHandler('start', start))
