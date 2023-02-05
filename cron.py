@@ -17,7 +17,7 @@ for website in websites:
     try:
         if method == 'check_content':
             param = website.param
-            result = checker.content_checker(url, param)
+            result = checker.content_check(url, param)
             if result['fetch'] is True and website.last != '' and website.last != result['match_hash']:
                 website.last = result['match_hash']
                 website.save()
@@ -28,5 +28,6 @@ for website in websites:
                 else:
                     bot.sendMessage(chat_id=website.chat_id,
                                     text="Content changed for %s." % website.url)
-    except:
+    except Exception as e:
         print('Error for url %s' % url)
+        print(e)

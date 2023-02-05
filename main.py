@@ -54,12 +54,12 @@ async def add(bot: Update, context: ContextTypes.DEFAULT_TYPE):
     if website_count == 0:
         # check can fetch
         try:
-            result = checker.content_checker(url, param)
+            result = checker.content_check(url, param)
             if result['fetch'] is False:
                 await bot.message.reply_text("Can't fetch %s" % url)
                 return
-        except:
-            await bot.message.reply_text('param error')
+        except Exception as e:
+            await bot.message.reply_text('error %s' % e.message)
             return
         
         website = Website(chat_id=bot.effective_message.chat_id, url=url, method='check_content', param=param)
@@ -102,7 +102,7 @@ async def test(bot: Update, context: ContextTypes.DEFAULT_TYPE):
         param = context.args[1]
 
     try:
-        result = checker.check_content(url, param)
+        result = checker.content_check(url, param)
         if result['fetch'] is False:
             await bot.message.reply_text("fetch %s is error" % url)
             return
@@ -111,10 +111,8 @@ async def test(bot: Update, context: ContextTypes.DEFAULT_TYPE):
             await bot.message.reply_text("fetch %s is ok, status code %d" % url, result['status_code'])
         else:
             await bot.message.reply_text("fetch %s is ok, status code %d, match %s" % url, result['status_code'], result['match_content'])
-    except:
-        if len(param) == 0:
-            await bot.message.reply_text("param is error")
-            return
+    except Exception as e:
+        await bot.message.reply_text('error %s' % e.message)
 
 app = Application.builder().token(TELEGRAM_API_KEY).build()
 app.add_handler(CommandHandler('start', start))
