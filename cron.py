@@ -2,8 +2,8 @@
 import telegram
 from settings import TELEGRAM_API_KEY
 from data import Website
-import requests
 import checker
+import asyncio
 
 
 bot = telegram.Bot(token=TELEGRAM_API_KEY)
@@ -19,7 +19,7 @@ async def main():
             if method == 'check_content':
                 param = website.param
                 result = checker.content_check(url, param)
-                if result['fetch'] is True and website.last != '' and website.last != result['match_hash']:
+                if result['fetch'] is True and website.last != result['match_hash']:
                     website.last = result['match_hash']
                     website.save()
 
@@ -34,4 +34,4 @@ async def main():
             print(e)
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
