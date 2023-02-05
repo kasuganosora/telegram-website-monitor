@@ -16,7 +16,9 @@ class Website(BaseModel):
     chat_id = CharField()
     url = CharField()
     created_date = DateTimeField(default=datetime.datetime.now)
-    last_status_code = IntegerField(default=0)
+    method = CharField(default='')
+    param = CharField(default='')
+    last = CharField(default='')
 
 
 db.connect()

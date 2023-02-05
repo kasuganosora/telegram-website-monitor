@@ -1,14 +1,14 @@
 #!/usr/bin/env python
-from telegram.ext import Updater, CommandHandler
+from telegram.ext import Application, CommandHandler,ContextTypes
 from settings import TELEGRAM_API_KEY, BOTAN_TOKEN
 from data import Website
 import requests
 from decorators import required_argument, valid_url
-import botan
-
+from telegram import ForceReply, Update,Bot
+import checker
 
 help_text = """
-The bot ensures that your website was always online. In the case of status changes, the bot will tell you that you need to pay attention to the site. The website is checked for availability every 5 minutes.
+The bot ensures that your website was always online. In the case of content changes, the bot will tell you that you need to pay attention to the site. The website is checked for availability every 5 minutes.
 
 Commands:
 
@@ -23,92 +23,99 @@ For example:
 
 /test https://crusat.ru
 
-For any issues visit: https://github.com/crusat/telegram-website-monitor/issues
+For any issues visit:https://github.com/kasuganosora/telegram-website-monitor/issues
 
-Contact author: @crusat
+Contact author: @kasuganosora
+base on: https://github.com/crusat/telegram-website-monitor
 """
 
 
-def start(bot, update):
-    botan.track(BOTAN_TOKEN, update.message.chat_id, update.message.to_dict(), 'start')
-    bot.sendMessage(chat_id=update.message.chat_id, text="Hello!\nThis is telegram bot to check that the site is alive.\n%s" % help_text)
+async def start(bot: Update, context: ContextTypes.DEFAULT_TYPE):
+    await bot.message.reply_text("Hello!\nThis is telegram bot to check that the url content change.\n%s" % help_text)
 
 
-def show_help(bot, update):
-    botan.track(BOTAN_TOKEN, update.message.chat_id, update.message.to_dict(), 'help')
-    bot.sendMessage(chat_id=update.message.chat_id, text="%s" % help_text)
-
+async def show_help(bot: Update, context: ContextTypes.DEFAULT_TYPE):
+    await bot.message.reply_text("%s" % help_text)
 
 @required_argument
 @valid_url
-def add(bot, update, args):
+async def add(bot: Update, context: ContextTypes.DEFAULT_TYPE):
+    args = context.args
     print('add')
-    botan.track(BOTAN_TOKEN, update.message.chat_id, update.message.to_dict(), 'add')
     print(args[0])
-    url = args[0].lower()
-    print(url)
-    website_count = (Website.select().where((Website.chat_id == update.message.chat_id) & (Website.url == url)).count())
+    url = args[0]
+    param = ''
+    if len(args) > 1:
+        param = args[1]
+    print(url + '\t' + param)
+
+    website_count = (Website.select().where((Website.chat_id == bot.effective_message.chat_id) & (Website.url == url)).count())
     print(website_count)
     if website_count == 0:
-        website = Website(chat_id=update.message.chat_id, url=url)
+        website = Website(chat_id=bot.effective_message.chat_id, url=url, method='check_content', param=param)
         print('ok1')
         website.save(force_insert=True)
         print('ok2')
-        bot.sendMessage(chat_id=update.message.chat_id, text="Added %s" % url)
+        await bot.message.reply_text("Added %s" % url)
         print('ok3')
     else:
-        bot.sendMessage(chat_id=update.message.chat_id, text="Website %s already exists" % url)
+        await bot.message.reply_text("Website %s already exists" % url)
     print('end')
 
 
 @required_argument
-def delete(bot, update, args):
-    botan.track(BOTAN_TOKEN, update.message.chat_id, update.message.to_dict(), 'delete')
+async def delete(bot: Update, context: ContextTypes.DEFAULT_TYPE):
+    args = context.args
     url = args[0].lower()
-    website = Website.get((Website.chat_id == update.message.chat_id) & (Website.url == url))
+    website = Website.get((Website.chat_id == bot.effective_message.chat_id) & (Website.url == url))
     if website:
         website.delete_instance()
-        bot.sendMessage(chat_id=update.message.chat_id, text="Deleted %s" % url)
+        await bot.message.reply_text("Deleted %s" % url)
     else:
-        bot.sendMessage(chat_id=update.message.chat_id, text="Website %s is not exists" % url)
+        await bot.message.reply_text("Website %s is not exists" % url)
 
 
-def url_list(bot, update):
-    botan.track(BOTAN_TOKEN, update.message.chat_id, update.message.to_dict(), 'list')
-    websites = (Website.select().where(Website.chat_id == update.message.chat_id))
+async def url_list(bot: Update, context: ContextTypes.DEFAULT_TYPE):
+    websites = (Website.select().where(Website.chat_id == bot.effective_message.chat_id))
     out = ''
     for website in websites:
-        out += "%s (last status code: %s)\n" % (website.url, website.last_status_code)
+        out += "%s\n" % (website.url)
     if out == '':
-        bot.sendMessage(chat_id=update.message.chat_id, text="List empty")
+        await bot.message.reply_text("List empty")
     else:
-        bot.sendMessage(chat_id=update.message.chat_id, text="%s" % out)
-
+        await bot.message.reply_text(out)
 
 @required_argument
 @valid_url
-def test(bot, update, args):
-    botan.track(BOTAN_TOKEN, update.message.chat_id, update.message.to_dict(), 'test')
-    url = args[0].lower()
+async def test(bot: Update, context: ContextTypes.DEFAULT_TYPE):
+    url = context.args[0]
+    param = ''
+
+    if len(context.args) > 1:
+        param = context.args[1]
+
     try:
-        r = requests.head(url)
-        if r.status_code == 200:
-            bot.sendMessage(chat_id=update.message.chat_id, text="Url %s is alive (status code 200)" % url)
-        else:
-            bot.sendMessage(chat_id=update.message.chat_id, text="Status code of url %s is %s" % (url, r.status_code))
+        result = checker.check_content(url, param)
     except:
-        bot.sendMessage(chat_id=update.message.chat_id, text="Error for url %s" % url)
+        if len(param) == 0:
+            await bot.message.reply_text("param is error")
+            return
+    
+    if result['fetch'] is False:
+        await bot.message.reply_text("fetch %s is error" % url)
+        return
+    
+    if len(param) == 0:
+        await bot.message.reply_text("fetch %s is ok, status code %d" % url, result['status_code'])
+    else:
+        await bot.message.reply_text("fetch %s is ok, status code %d, match %s" % url, result['status_code'], result['match_content'])
 
+app = Application.builder().token(TELEGRAM_API_KEY).build()
+app.add_handler(CommandHandler('start', start))
+app.add_handler(CommandHandler("add", add))
+app.add_handler(CommandHandler("del", delete))
+app.add_handler(CommandHandler("list", url_list))
+app.add_handler(CommandHandler("test", test))
+app.add_handler(CommandHandler("help", show_help))
 
-updater = Updater(TELEGRAM_API_KEY)
-updater.dispatcher.add_handler(CommandHandler('start', start))
-updater.dispatcher.add_handler(CommandHandler("add", add, pass_args=True))
-updater.dispatcher.add_handler(CommandHandler("del", delete, pass_args=True))
-updater.dispatcher.add_handler(CommandHandler("list", url_list))
-updater.dispatcher.add_handler(CommandHandler("test", test, pass_args=True))
-updater.dispatcher.add_handler(CommandHandler("help", show_help))
-
-print('Telegram bot started')
-
-updater.start_polling()
-updater.idle()
+app.run_polling()
