@@ -59,7 +59,7 @@ async def add(bot: Update, context: ContextTypes.DEFAULT_TYPE):
                 await bot.message.reply_text("Can't fetch %s" % url)
                 return
         except Exception as e:
-            await bot.message.reply_text('error %s' % e.message)
+            await bot.message.reply_text('error %s' % e)
             return
         
         website = Website(chat_id=bot.effective_message.chat_id, url=url, method='check_content', param=param)
@@ -108,11 +108,11 @@ async def test(bot: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         
         if len(param) == 0:
-            await bot.message.reply_text("fetch %s is ok, status code %d" % url, result['status_code'])
+            await bot.message.reply_text("fetch %s is ok, status code %d" % (url, result['status_code']))
         else:
-            await bot.message.reply_text("fetch %s is ok, status code %d, match %s" % url, result['status_code'], result['match_content'])
+            await bot.message.reply_text("fetch %s is ok, status code %d, match %s" % (url, result['status_code'], result['match_content']))
     except Exception as e:
-        await bot.message.reply_text('error %s' % e.message)
+        await bot.message.reply_text('error %s' % e)
 
 app = Application.builder().token(TELEGRAM_API_KEY).build()
 app.add_handler(CommandHandler('start', start))
@@ -122,4 +122,5 @@ app.add_handler(CommandHandler("list", url_list))
 app.add_handler(CommandHandler("test", test))
 app.add_handler(CommandHandler("help", show_help))
 
+print('Telegram bot started')
 app.run_polling()
