@@ -24,13 +24,13 @@ For example:
 /test https://google.com
 
 check domain can be registered
-/list_domain - Show yours added domains
+/list_domains - Show yours added domains
 /add_domain <domain> - Add new domain for monitoring
 /del_domain <domain> - Remove exist domain
 
 
 Contact author: @kasuganosora
-base on: https://github.com/crusat/telegram-website-monitor
+https://github.com/kasuganosora/telegram-website-monitor
 """
 
 

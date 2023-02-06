@@ -89,7 +89,7 @@ def content_check(url, query_str):
 
 def check_domain_can_reg(domain):
     try:
-        dns.resolver.query(domain, 'A')
+        dns.resolver.query(domain, 'NS')
         return False
     except:
         return True
