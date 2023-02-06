@@ -24,9 +24,9 @@ For example:
 /test https://google.com
 
 check domain can be registered
-/list-domain - Show yours added domains
-/add-domain <domain> - Add new domain for monitoring
-/del-domain <domain> - Remove exist domain
+/list_domain - Show yours added domains
+/add_domain <domain> - Add new domain for monitoring
+/del_domain <domain> - Remove exist domain
 
 
 Contact author: @kasuganosora
@@ -166,9 +166,9 @@ app.add_handler(CommandHandler("del", delete))
 app.add_handler(CommandHandler("list", url_list))
 app.add_handler(CommandHandler("test", test))
 app.add_handler(CommandHandler("help", show_help))
-app.add_handler(CommandHandler("list-domains", list_domains))
-app.add_handler(CommandHandler("add-domain", add_domain))
-app.add_handler(CommandHandler("del-domain", delete_domain))
+app.add_handler(CommandHandler("list_domains", list_domains))
+app.add_handler(CommandHandler("add_domain", add_domain))
+app.add_handler(CommandHandler("del_domain", delete_domain))
 
 
 print('Telegram bot started')
