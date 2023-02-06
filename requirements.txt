@@ -5,3 +5,4 @@ validators
 pyquery
 lxml
 jsonpath-ng
+dnspython

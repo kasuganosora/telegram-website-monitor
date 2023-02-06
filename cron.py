@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import telegram
 from settings import TELEGRAM_API_KEY
-from data import Website
+from data import Website,Domain
 import checker
 import asyncio
 
@@ -32,6 +32,27 @@ async def main():
         except Exception as e:
             print('Error for url %s' % url)
             print(e)
+
+    domains = (Domain.select())
+    for d in domains:
+        status = 'false'
+
+        if checker.check_domain_can_reg(d.domain):
+            status = 'true'
+
+        sendMessage = False
+
+        if d.last != status:
+            d.last = status
+            d.save()
+            if status == 'true':
+                sendMessage = True
+        
+        if sendMessage:
+            await bot.sendMessage(chat_id=d.chat_id,
+                            text="Domain %s can be registered." % d.domain)
+        
+
 
 if __name__ == '__main__':
     asyncio.run(main())

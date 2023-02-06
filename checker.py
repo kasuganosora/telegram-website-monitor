@@ -4,9 +4,10 @@ from jsonpath_ng import jsonpath, parse
 import json
 import hashlib
 from pyquery import PyQuery as pq
+import dns.resolver
 
 def content_check(url, query_str):
-    # 获取网页的内容
+    # get url content
     try:
         resp = requests.get(url)
         status_code = resp.status_code
@@ -84,3 +85,11 @@ def content_check(url, query_str):
     ret['match_hash'] = match_hash
     ret['match_content'] = match
     return ret
+
+
+def check_domain_can_reg(domain):
+    try:
+        dns.resolver.query(domain, 'A')
+        return False
+    except:
+        return True

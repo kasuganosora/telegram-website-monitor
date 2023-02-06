@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 from telegram.ext import Application, CommandHandler,ContextTypes
 from settings import TELEGRAM_API_KEY
-from data import Website
+from data import Website, Domain
 import requests
 from decorators import required_argument, valid_url
-from telegram import ForceReply, Update,Bot
+from telegram import Update
 import checker
 
 help_text = """
-The bot ensures that your website was always online. In the case of content changes, the bot will tell you that you need to pay attention to the site. The website is checked for availability every 5 minutes.
+The bot can check that the url content change and domain can be registered.
 
 Commands:
 
@@ -21,9 +21,13 @@ Commands:
 Url format is http[s]://host.zone/path?querystring
 For example:
 
-/test https://crusat.ru
+/test https://google.com
 
-For any issues visit:https://github.com/kasuganosora/telegram-website-monitor/issues
+check domain can be registered
+/list-domain - Show yours added domains
+/add-domain <domain> - Add new domain for monitoring
+/del-domain <domain> - Remove exist domain
+
 
 Contact author: @kasuganosora
 base on: https://github.com/crusat/telegram-website-monitor
@@ -31,7 +35,7 @@ base on: https://github.com/crusat/telegram-website-monitor
 
 
 async def start(bot: Update, context: ContextTypes.DEFAULT_TYPE):
-    await bot.message.reply_text("Hello!\nThis is telegram bot to check that the url content change.\n%s" % help_text)
+    await bot.message.reply_text("Hello!\nThe bot can check that the url content change and domain can be registered.\n%s" % help_text)
 
 
 async def show_help(bot: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -114,6 +118,47 @@ async def test(bot: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await bot.message.reply_text('error %s' % e)
 
+
+async def list_domains(bot: Update, context: ContextTypes.DEFAULT_TYPE):
+    domains = (Domain.select().where(Domain.chat_id == bot.effective_message.chat_id))
+    out = ''
+    for domain in domains:
+        status = 'registered'
+        if domain.last == 'true':
+            status = 'unregistered'
+        out += "%s\t%s\n" % (domain.domain, status)
+    
+    if out == '':
+        await bot.message.reply_text("List empty")
+    else:
+        await bot.message.reply_text(out)
+
+async def add_domain(bot: Update, context: ContextTypes.DEFAULT_TYPE):
+    d = context.args[0]
+    domain_count = (Domain.select().where((Domain.chat_id == bot.effective_message.chat_id) & (Domain.domain == d)).count())
+    if domain_count == 0:
+        # check domain current status
+        status = 'false'
+        if checker.check_domain_can_reg(d):
+            status = 'true'
+        record = Domain(chat_id=bot.effective_message.chat_id, domain=d, last=status)
+        record.save(force_insert=True)
+
+        await bot.message.reply_text("Added %s" % d)
+
+    else:
+        await bot.message.reply_text("Domain %s already exists" % d)
+
+
+async def delete_domain(bot: Update, context: ContextTypes.DEFAULT_TYPE):
+    d = context.args[0]
+    domain = Domain.get((Domain.chat_id == bot.effective_message.chat_id) & (Domain.domain == d))
+    if domain:
+        domain.delete_instance()
+        await bot.message.reply_text("Deleted %s" % d)
+    else:
+        await bot.message.reply_text("Domain %s is not exists" % d)
+
 app = Application.builder().token(TELEGRAM_API_KEY).build()
 app.add_handler(CommandHandler('start', start))
 app.add_handler(CommandHandler("add", add))
@@ -121,6 +166,10 @@ app.add_handler(CommandHandler("del", delete))
 app.add_handler(CommandHandler("list", url_list))
 app.add_handler(CommandHandler("test", test))
 app.add_handler(CommandHandler("help", show_help))
+app.add_handler(CommandHandler("list-domains", list_domains))
+app.add_handler(CommandHandler("add-domain", add_domain))
+app.add_handler(CommandHandler("del-domain", delete_domain))
+
 
 print('Telegram bot started')
 app.run_polling()
