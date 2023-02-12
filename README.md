@@ -50,6 +50,6 @@ Commands:
 
 ## License  
 
-bese on [ Kuznetsov Aleksey <crusat@yandex.ru>] https://github.com/crusat/telegram-website-monitor
-License: MIT
-Created: 2023/2/25
+bese on [ Kuznetsov Aleksey <crusat@yandex.ru>] https://github.com/crusat/telegram-website-monitor  
+License: MIT  
+Created: 2023/2/25  
